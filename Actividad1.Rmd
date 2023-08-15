@@ -1,0 +1,157 @@
+---
+title: "Actividad1"
+output: html_document
+date: "2023-08-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducción
+
+En la ciudad de Cali emerge la firma B&C, una firma de bienes raíces muy exitosa en los últimos años. En un contexto donde la urbe se ha transformado en un crisol de oportunidades, el mercado de bienes raíces ha florecido notablemente, impulsado por la afluencia de habitantes, la inversión extranjera directa y la concreción de innovadores proyectos inmobiliarios. Las ventas de este sector en 2021 cifro en 6700 millones y en 2022 aumento hasta los 6100 mil millones, teniendo esto como base el horizonte augura un crecimiento sostenido que dinamiza la economía regional.
+La empresa B&C ha construido una valiosa base de información que abarca precios, ubicaciones, atributos y operaciones de venta en Cali. Este compendio de información no solo simboliza el tejido de la ciudad, sino que se erige como una oportunidad excepcional para la confección de un informe estadístico de considerable relevancia para la empresa. Esta reveladora indagación podría desentrañar aspectos significativos, como la distribución de precios en diversos sectores de la ciudad, los tipos de viviendas más apreciados por los ciudadanos, los atributos demandados por los compradores y la evolución del mercado inmobiliario en la localidad.
+
+## Objetivos
+### Objetivo general
+•	Realizar análisis descriptivo de los datos, para identificar las tendencias y patrones de los datos.
+
+### Objetivos específicos
+•	Definir Precio de las viviendas en diferentes zonas de Cali
+
+•	Establecer cual es Tipo de viviendas más vendidas en Cali
+
+•	Descubrir cuales son las Características más buscadas en las viviendas en Cali
+
+•	Establecer cual es Evolución del mercado de bienes raíces en Cali.
+
+## Métodos
+
+Para llevar a cabo los objetivos establecidos, se utilizó la Herramienta Rstudio, en la cual se utilizaron las librerías ggplot2, naniar, mice, desctools y dplyr que permiten una buena manipulación de la data y brindan la oportunidad de realizar gráficas que facilitan los análisis de los datos.
+
+
+Para empezar a efectuar el análisis estadístico en primera instancia se realizó una imputación de datos en las variables llamadas “piso” y “parquea”, ya que contenían demasiados datos vacíos que podrían afectar el análisis de los datos. Para el caso de la variable “piso” los datos vacíos se reemplazaron con la moda, mientras que en el caso de la variable “parque” los datos vacíos fueron reemplazados con la media. Posteriormente, se procedió a eliminar los datos vacíos de las demás variables, ya que, el número de vacíos era muy pequeño en comparación al total de datos. 
+
+
+Al tener la base con el número de datos finales, se procede a realizar corrección en los campos “tipo” y “barrio”, donde se colocó en minúscula toda la data, ya que aparecían datos en minúscula y en mayúscula.  También se les quito las tildes a estos campos para que no se presentaran incongruencias en la data. Por último, se reemplazo en el campo ‘Tipo’ la variable apto por apartamento.  
+
+
+Al haber realizado la limpieza de los datos, se obtiene una base de datos con datos óptimos para realizar el análisis estadístico adecuado, para cumplir con los objetivos planteados.
+
+
+## RESULTADOS
+
+Se procede a utilizar la herramienta Rstudio para analizar la data, en primera instancia se realiza un análisis del precio de cada una de las viviendas por zona, a su vez se muestra la desviación estándar y el total de datos por zona como se muestra en la siguiente grafica:
+
+##### *Grafica 1: Precio de las viviendas en diferentes zonas de Cali*
+```{r bloque1, echo=FALSE, message = FALSE}
+library(paqueteMET)
+library(naniar)
+library(ggplot2)
+library(mice)
+library(DescTools)
+library(dplyr)
+completos <- vivienda_faltantes
+
+media_parquea <- mean(vivienda_faltantes$parquea, na.rm = TRUE)
+vivienda_faltantes$parquea[is.na(vivienda_faltantes$parquea)] <- media_parquea
+
+moda_piso <- Mode(vivienda_faltantes$piso, na.rm = TRUE)
+vivienda_faltantes$piso[is.na(vivienda_faltantes$piso)] <- moda_piso
+
+datosSINA <- na.omit(vivienda_faltantes)
+datosSINA$barrio <- tolower(datosSINA$barrio)
+datosSINA$barrio <- iconv(tolower(datosSINA$barrio), "UTF-8", "ASCII//TRANSLIT")
+                   
+resumen <- datosSINA %>%
+  group_by(zona) %>%
+  summarise(media_precio = mean(preciom), desv_est_precio = sd(preciom), total = n())
+
+print(resumen)
+```
+
+En segunda instancia se calcula el total de cada tipo de vivienda, para observar cual es el tipo de vivienda mas y menos vendida en Cali, como se muestra en la siguiente grafica: 
+
+##### *Grafica 2: Total de viviendas por tipo*
+```{r bloque2, echo=FALSE, message = FALSE}
+# Definir una condición
+datosSINA$tipo <- tolower(datosSINA$tipo)
+condicion <- datosSINA$tipo == 'apto'
+# Reemplazar los valores en función de la condición
+datosSINA$tipo <- ifelse(condicion, 'apartamento', datosSINA$tipo)
+
+tabla_frecuencia <- table(datosSINA$tipo)
+# Convertir la tabla en un dataframe
+df_frecuencia <- as.data.frame(tabla_frecuencia)
+
+# Renombrar las columnas
+colnames(df_frecuencia) <- c("Valor", "Frecuencia")
+
+# Imprimir el dataframe con valores únicos y frecuencias
+print(df_frecuencia)
+
+
+```
+
+
+En tercera instancia se calculo la moda de cada una de las variables, cualitativas y cuantitativas, para observar cuales son las características que los habitantes de Cali buscan más a menudo, y los resultados se muestran en la siguiente grafica: 
+
+##### *Grafica 3: Características más buscadas en las viviendas en Cali*
+
+
+```{r bloque 3, echo=FALSE, message = FALSE}
+# Mostrar las modas por columna junto con sus nombres
+modas_por_columna <- lapply(datosSINA, function(columna) {
+  frecuencias <- table(columna)
+  moda <- as.character(names(frecuencias[frecuencias == max(frecuencias)]))
+  return(moda)
+})
+
+# Mostrar las modas por columna junto con sus nombres
+for (i in 1:length(modas_por_columna)) {
+  cat( names(modas_por_columna[i]), "- Moda:", modas_por_columna[[i]], "\n")
+}
+
+```
+
+
+Por ultima instancia se realiza la suma de los precios de cada una de las viviendas registradas en la base de datos, para así apreciar como ha evolucionado el mercado de los bienes raíces con el paso de los años. El resultado obtenido se muestra en la siguiente grafica: 
+
+
+##### *Grafica 4: Sumatoria de precios de viviendas*
+```{r bloque 4, echo=FALSE, message = FALSE}
+suma_valores <- sum(datosSINA$preciom)
+print(paste("La suma de los valores en la columna Precio es:", suma_valores, "millones"))
+```
+
+## Discusion
+
+Basándonos en los resultados se logra dar respuesta a cada uno de los objetivos planteados siendo así entonces, como se observa en la grafica 1, los precios promedio de las viviendas por zona de Cali son:  Zona centro: 310 millones, Zona norte: 346 millones, Zona oeste: 679 millones, Zona Oriente: 229 millones y Zona sur: 427 millones. Teniendo esto en cuenta se puede notar que la zona con promedio de precios mas alto es la zona Oeste, Y basándonos también en la grafica 1, se observa que el lugar con mayor cantidad de ventas de viviendas es la Zona sur con un total de 4726 ventas.
+
+Por otro lado, tenemos los resultados que se presentan en la grafica 2, donde se puede apreciar que el tipo de casa mas vendido son los apartamentos con un total de 5106 de ventas, mientras que las menos vendidas son las casas con un total de 3221 de ventas.
+
+También, se tienen los resultados que se observan en la grafica 3, en esta grafica se pueden apreciar las características mas buscadas en las viviendas, en primera instancia en esta grafica podemos notar que la zona más buscada es la zona sur, se suelen comprar viviendas ubicadas en el segundo piso, el estrato más llamativo para mudarse es el estrato 5, el precio más buscado estaría en los 350 millones, es deseable una casa que consta de 60 metros cuadrados, es atractiva una casa que tenga por lo menos 1 parqueadero, la mayoría de casas vendidas tienen 2 baños, las casas mas buscadas tienen 3 habitaciones, el tipo de vivienda que mas se compra son los apartamentos y el barrios con mas afluencia de compradores es Valle de Lili.
+
+Para finalizar, se calcula la sumatoria de todos los precios de las casas que se tienen en la base de datos para obtener el resultado que se presenta en la grafica 4, donde se muestra que el total de precios de ventas es de 3616026 millones.
+
+
+## Conclusiones
+
+En base a lo presentado con anterioridad se puede concluir que los precios de las viviendas varían dependiendo de la zona en que se encuentre, así como también varia el numero de viviendas que se venden por zona. A su vez, se puede pudo determinar que las personas prefieren en un 61.37% los apartamentos a las casas. Por otro lado, se encontraron las características que las personas más eligen al momento de comprar una casa. Por último, se encontró que las ventas en Cali llegaron a los 3616026 millones, por lo cual se notó un crecimiento en las ventas como era de esperarse según análisis de años pasados.
+
+## Anexos
+##### *Anexo 1: Grafico de relacion de datos vacios*
+```{r bloque 5, echo=FALSE, message = FALSE}
+grafico <-md.pattern(completos, rotate.names = TRUE)
+```
+
+##### *Anexo 2: Diagrama de bigotes de precio vs zona*
+```{r bloque 6, echo=FALSE, message = FALSE}
+ggplot(datosSINA, aes(x = zona, y = preciom, fill = zona)) +
+  geom_boxplot() +
+  labs(title = "Comparativa entre Precio y Zona",
+       x = "Zona",
+       y = "Precio") +
+  theme_minimal()
+```
